@@ -1,0 +1,13 @@
+{
+  "domain": "sncf_opendata",
+  "name": "SNCF Open Data",
+  "codeowners": ["@enavarro222"],
+  "config_flow": true,
+  "documentation": "https://github.com/enavarro222/ha-sncf-opendata",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/enavarro222/ha-sncf-opendata/issues",
+  "requirements": ["gtfs-realtime-bindings==3.0.0"],
+  "single_config_entry": true,
+  "version": "0.1.0"
+}

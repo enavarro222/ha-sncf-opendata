@@ -1,0 +1,186 @@
+{
+  "config": {
+    "abort": {
+      "single_instance_allowed": "SNCF Open Data est déjà configurée. Ajoutez vos trajets depuis sa page."
+    },
+    "error": {
+      "cannot_connect": "Impossible de joindre le flux open data de la SNCF.",
+      "invalid_feed": "Le flux open data de la SNCF a renvoyé des données inattendues.",
+      "unknown": "Erreur inattendue."
+    },
+    "step": {
+      "user": {
+        "title": "SNCF Open Data",
+        "description": "Suivez les trains SNCF (TER, Intercités, TGV) avec les données ouvertes officielles : horaires, retards, suppressions et messages de perturbation. Aucun compte ni clé API n'est nécessaire.\n\nUne fois l'intégration installée, ajoutez vos trajets depuis sa page."
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options",
+        "data": {
+          "realtime_interval": "Intervalle de mise à jour temps réel",
+          "platforms": "Afficher les voies (source non officielle)"
+        },
+        "data_description": {
+          "realtime_interval": "Fréquence de vérification des retards et suppressions quand la plage d'un trajet approche ou est en cours. Chaque vérification télécharge environ 450 ko.",
+          "platforms": "Les voies ne font pas partie des données ouvertes SNCF. Cette option les lit sur les tableaux de départs de Gares & Connexions, une source non documentée qui peut cesser de fonctionner à tout moment. Tout le reste continue de fonctionner en cas de panne."
+        }
+      }
+    }
+  },
+  "config_subentries": {
+    "route": {
+      "entry_type": "Trajet",
+      "initiate_flow": {
+        "user": "Ajouter un trajet"
+      },
+      "abort": {
+        "entry_not_loaded": "L'intégration n'est pas encore chargée. Réessayez dans un instant.",
+        "reconfigure_successful": "Le trajet a été modifié."
+      },
+      "error": {
+        "station_not_found": "Aucune gare ne correspond à ce nom.",
+        "same_station": "Choisissez au moins une destination différente de la gare de départ.",
+        "end_before_start": "La fin de la plage doit être après son début (les plages qui passent minuit ne sont pas gérées).",
+        "no_weekday": "Choisissez au moins un jour.",
+        "already_configured": "Ce trajet est déjà suivi avec la même plage horaire."
+      },
+      "step": {
+        "user": {
+          "title": "Gares",
+          "description": "Tapez le nom des gares. Les trains directs de la gare de départ vers l'une des destinations sont suivis.",
+          "data": {
+            "origin_query": "Gare de départ",
+            "destinations_query": "Gares d'arrivée"
+          },
+          "data_description": {
+            "origin_query": "Par exemple : Toulouse Matabiau",
+            "destinations_query": "Un ou plusieurs noms séparés par des virgules, par exemple : Rabastens, St Sulpice"
+          }
+        },
+        "stations": {
+          "title": "Choix des gares",
+          "data": {
+            "origin": "Gare de départ",
+            "destinations": "Gares d'arrivée"
+          }
+        },
+        "schedule": {
+          "title": "Quand",
+          "description": "Les trains qui partent de la gare de départ dans cette plage horaire sont suivis, les jours choisis. Le temps réel est consulté d'une heure avant la plage jusqu'à 30 minutes après.",
+          "data": {
+            "route_name": "Nom",
+            "time_start": "De",
+            "time_end": "À",
+            "weekdays": "Jours",
+            "delay_threshold": "Seuil de retard",
+            "max_trains": "Trains listés"
+          },
+          "data_description": {
+            "delay_threshold": "Un train est signalé en retard à partir de ce retard, puis de nouveau quand son retard varie d'autant.",
+            "max_trains": "Nombre maximal de prochains trains dans les attributs du capteur."
+          }
+        },
+        "reconfigure": {
+          "title": "Modifier le trajet",
+          "description": "Les gares ne peuvent pas être modifiées ; ajoutez un nouveau trajet pour d'autres gares.",
+          "data": {
+            "route_name": "Nom",
+            "time_start": "De",
+            "time_end": "À",
+            "weekdays": "Jours",
+            "delay_threshold": "Seuil de retard",
+            "max_trains": "Trains listés"
+          },
+          "data_description": {
+            "delay_threshold": "Un train est signalé en retard à partir de ce retard, puis de nouveau quand son retard varie d'autant.",
+            "max_trains": "Nombre maximal de prochains trains dans les attributs du capteur."
+          }
+        }
+      }
+    }
+  },
+  "selector": {
+    "weekdays": {
+      "options": {
+        "mon": "Lundi",
+        "tue": "Mardi",
+        "wed": "Mercredi",
+        "thu": "Jeudi",
+        "fri": "Vendredi",
+        "sat": "Samedi",
+        "sun": "Dimanche"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "disruption": {
+        "name": "Perturbation",
+        "state_attributes": {
+          "cancelled": { "name": "Trains supprimés" },
+          "delayed": { "name": "Trains en retard" }
+        }
+      },
+      "realtime_feed": {
+        "name": "Flux temps réel",
+        "state_attributes": {
+          "published": { "name": "Publié" },
+          "error": { "name": "Erreur" },
+          "timetable_version": { "name": "Version des horaires" },
+          "platforms_available": { "name": "Voies disponibles" }
+        }
+      }
+    },
+    "event": {
+      "train_update": {
+        "name": "Changement de train",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "delayed": "En retard",
+              "delay_changed": "Retard modifié",
+              "back_on_time": "De nouveau à l'heure",
+              "cancelled": "Supprimé",
+              "platform_assigned": "Voie affichée",
+              "platform_changed": "Changement de voie"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "next_departure": {
+        "name": "Prochain départ",
+        "state_attributes": {
+          "trains": { "name": "Trains" },
+          "window_start": { "name": "Début de plage" },
+          "window_end": { "name": "Fin de plage" },
+          "realtime": { "name": "Temps réel" },
+          "realtime_updated": { "name": "Temps réel mis à jour" },
+          "train_number": { "name": "Numéro du train" },
+          "scheduled_departure": { "name": "Départ prévu" },
+          "delay": { "name": "Retard" },
+          "status": {
+            "name": "État",
+            "state": {
+              "on_time": "À l'heure",
+              "delayed": "En retard",
+              "cancelled": "Supprimé",
+              "scheduled": "Horaire prévu"
+            }
+          },
+          "platform": { "name": "Voie" },
+          "destinations": { "name": "Destinations" }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "timetable_unavailable": {
+      "message": "Les horaires SNCF n'ont pas pu être téléchargés et aucune copie en cache n'est disponible."
+    }
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "config": {
+    "abort": {
+      "single_instance_allowed": "SNCF Open Data is already set up. Add routes from its page."
+    },
+    "error": {
+      "cannot_connect": "Could not reach the SNCF open data feed.",
+      "invalid_feed": "The SNCF open data feed answered with unexpected data.",
+      "unknown": "Unexpected error."
+    },
+    "step": {
+      "user": {
+        "title": "SNCF Open Data",
+        "description": "Follow SNCF trains (TER, Intercités, TGV) with the official open data: timetable, delays, cancellations and service alerts. No account or API key is needed.\n\nOnce set up, add your routes from the integration page."
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options",
+        "data": {
+          "realtime_interval": "Realtime update interval",
+          "platforms": "Show platforms (unofficial source)"
+        },
+        "data_description": {
+          "realtime_interval": "How often delays and cancellations are checked while a route window is close or open. Each check downloads about 450 kB.",
+          "platforms": "Platforms are not in the SNCF open data. This option reads them from the Gares & Connexions departure boards, an undocumented source that may stop working at any time. Everything else keeps working when it fails."
+        }
+      }
+    }
+  },
+  "config_subentries": {
+    "route": {
+      "entry_type": "Route",
+      "initiate_flow": {
+        "user": "Add route"
+      },
+      "abort": {
+        "entry_not_loaded": "The integration is not loaded yet. Try again in a moment.",
+        "reconfigure_successful": "The route was updated."
+      },
+      "error": {
+        "station_not_found": "No station matches this name.",
+        "same_station": "Pick at least one destination different from the departure station.",
+        "end_before_start": "The end of the window must be after its start (windows across midnight are not supported).",
+        "no_weekday": "Pick at least one day.",
+        "already_configured": "This route is already followed with the same window."
+      },
+      "step": {
+        "user": {
+          "title": "Stations",
+          "description": "Type the station names. Direct trains from the departure station to any of the destinations are followed.",
+          "data": {
+            "origin_query": "Departure station",
+            "destinations_query": "Destination stations"
+          },
+          "data_description": {
+            "origin_query": "For example: Toulouse Matabiau",
+            "destinations_query": "One or more names separated by commas, for example: Rabastens, St Sulpice"
+          }
+        },
+        "stations": {
+          "title": "Pick the stations",
+          "data": {
+            "origin": "Departure station",
+            "destinations": "Destination stations"
+          }
+        },
+        "schedule": {
+          "title": "When",
+          "description": "Trains leaving the departure station in this time window are followed, on the chosen days. Realtime data is checked from one hour before the window until 30 minutes after.",
+          "data": {
+            "route_name": "Name",
+            "time_start": "From",
+            "time_end": "To",
+            "weekdays": "Days",
+            "delay_threshold": "Delay threshold",
+            "max_trains": "Trains listed"
+          },
+          "data_description": {
+            "delay_threshold": "A train is reported as late from this delay, and again when its delay moves by this much.",
+            "max_trains": "Maximum number of upcoming trains in the sensor attributes."
+          }
+        },
+        "reconfigure": {
+          "title": "Change the route",
+          "description": "The stations cannot be changed; add a new route for other stations.",
+          "data": {
+            "route_name": "Name",
+            "time_start": "From",
+            "time_end": "To",
+            "weekdays": "Days",
+            "delay_threshold": "Delay threshold",
+            "max_trains": "Trains listed"
+          },
+          "data_description": {
+            "delay_threshold": "A train is reported as late from this delay, and again when its delay moves by this much.",
+            "max_trains": "Maximum number of upcoming trains in the sensor attributes."
+          }
+        }
+      }
+    }
+  },
+  "selector": {
+    "weekdays": {
+      "options": {
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday",
+        "sun": "Sunday"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "disruption": {
+        "name": "Disruption",
+        "state_attributes": {
+          "cancelled": { "name": "Cancelled trains" },
+          "delayed": { "name": "Late trains" }
+        }
+      },
+      "realtime_feed": {
+        "name": "Realtime feed",
+        "state_attributes": {
+          "published": { "name": "Published" },
+          "error": { "name": "Error" },
+          "timetable_version": { "name": "Timetable version" },
+          "platforms_available": { "name": "Platforms available" }
+        }
+      }
+    },
+    "event": {
+      "train_update": {
+        "name": "Train update",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "delayed": "Delayed",
+              "delay_changed": "Delay changed",
+              "back_on_time": "Back on time",
+              "cancelled": "Cancelled",
+              "platform_assigned": "Platform assigned",
+              "platform_changed": "Platform changed"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "next_departure": {
+        "name": "Next departure",
+        "state_attributes": {
+          "trains": { "name": "Trains" },
+          "window_start": { "name": "Window start" },
+          "window_end": { "name": "Window end" },
+          "realtime": { "name": "Realtime" },
+          "realtime_updated": { "name": "Realtime updated" },
+          "train_number": { "name": "Train number" },
+          "scheduled_departure": { "name": "Scheduled departure" },
+          "delay": { "name": "Delay" },
+          "status": {
+            "name": "Status",
+            "state": {
+              "on_time": "On time",
+              "delayed": "Delayed",
+              "cancelled": "Cancelled",
+              "scheduled": "Scheduled"
+            }
+          },
+          "platform": { "name": "Platform" },
+          "destinations": { "name": "Destinations" }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "timetable_unavailable": {
+      "message": "The SNCF timetable could not be downloaded and no cached copy is available."
+    }
+  }
+}

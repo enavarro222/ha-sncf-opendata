@@ -1,0 +1,5 @@
+homeassistant==2026.10.4
+pytest-homeassistant-custom-component
+gtfs-realtime-bindings==3.0.0
+ruff
+mypy

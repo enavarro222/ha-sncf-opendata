@@ -1,0 +1,37 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "disruption": {
+        "default": "mdi:train",
+        "state": {
+          "on": "mdi:train-variant"
+        }
+      },
+      "realtime_feed": {
+        "default": "mdi:access-point-network"
+      }
+    },
+    "event": {
+      "train_update": {
+        "default": "mdi:train",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "delayed": "mdi:timer-alert-outline",
+              "delay_changed": "mdi:timer-sync-outline",
+              "back_on_time": "mdi:timer-check-outline",
+              "cancelled": "mdi:cancel",
+              "platform_assigned": "mdi:sign-direction",
+              "platform_changed": "mdi:swap-horizontal"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "next_departure": {
+        "default": "mdi:train-car"
+      }
+    }
+  }
+}
