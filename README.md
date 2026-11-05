@@ -9,6 +9,8 @@ et messages de perturbation. **Aucun compte ni clé API** n'est nécessaire.
   SNCF a déjà retirés des horaires publiés (grèves, travaux).
 - Une entité événement pour vos automatisations : retard, retard qui change,
   retour à l'heure, suppression, voie affichée, changement de voie.
+- Cars de substitution en option, par trajet : les jours de grève ou de
+  travaux, ce sont souvent eux qui circulent.
 - Voies en option, depuis les tableaux de départs Gares & Connexions (source
   non officielle, voir plus bas).
 - Téléchargements limités : le temps réel n'est consulté qu'autour des plages
@@ -38,11 +40,22 @@ Sur la page de l'intégration, **Ajouter un trajet** :
    séparés par des virgules ; « St » et « Ste » sont compris) ;
 2. choisissez les gares dans les résultats ;
 3. donnez un nom, une plage horaire de départ (par exemple 16:30 – 20:00),
-   les jours, le seuil de retard et le nombre de trains listés.
+   les jours, le seuil de retard, le nombre de trains listés, et s'il faut
+   inclure les autocars.
 
-Seuls les **trains directs** sont suivis : ceux où l'on peut monter à la gare de
-départ et descendre à l'une des gares d'arrivée. Le nom, la plage, les jours et
-les seuils se modifient ensuite ; pour d'autres gares, ajoutez un trajet.
+Seuls les **trajets directs** sont suivis : ceux où l'on peut monter à la gare
+de départ et descendre à l'une des gares d'arrivée. Le nom, la plage, les
+jours, les seuils et les autocars se modifient ensuite ; pour d'autres gares,
+ajoutez un trajet.
+
+### Autocars
+
+Par défaut, un trajet ne suit que les trains. Avec **Inclure les autocars**,
+il suit aussi les services routiers de la SNCF : cars de substitution pendant
+une grève ou des travaux, et cars TER réguliers. Ils apparaissent comme les
+trains, avec leurs retards et suppressions quand le temps réel en donne, et un
+`mode` qui vaut `Car TER` (ou `Car` pour un car connu seulement du temps
+réel). Leur numéro est celui de la SNCF (par exemple `462034`).
 
 Chaque trajet est un appareil avec ses entités.
 
@@ -133,7 +146,8 @@ général affichées peu avant le départ.
   sans information reste en `scheduled` (horaire prévu), jamais présenté comme
   « à l'heure » par défaut.
 - Les trains déjà passés disparaissent du flux temps réel.
-- Trains directs uniquement ; pas de correspondances, pas d'autocars.
+- Trajets directs uniquement, pas de correspondances.
+- Les voies ne concernent que les trains.
 - Une plage horaire ne peut pas passer minuit.
 - Les flux temps réel sont ignorés s'ils datent de plus de 10 minutes.
 
@@ -156,8 +170,10 @@ make check   # ruff, mypy strict, tests avec couverture
 ```
 
 `tests/unit` teste le cœur sans Home Assistant (horaires, temps réel,
-fusion, détection des changements, voies), dont un test de non-régression sur
-un extrait des vrais flux du 4 novembre 2026 (`tests/fixtures/real`).
+fusion, détection des changements, voies), dont des tests de non-régression sur
+des extraits des vrais flux du 4 novembre 2026 (`tests/fixtures/real`) et du
+5 novembre 2026, jour de grève avec cars de substitution
+(`tests/fixtures/real_2026_11_05`).
 `tests/ha` teste l'intégration dans Home Assistant avec des serveurs simulés.
 
 ## Licence

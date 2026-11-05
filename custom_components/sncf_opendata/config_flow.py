@@ -36,6 +36,7 @@ from .const import (
     CONF_DELAY_THRESHOLD,
     CONF_DESTINATIONS,
     CONF_DESTINATIONS_QUERY,
+    CONF_INCLUDE_COACHES,
     CONF_MAX_TRAINS,
     CONF_ORIGIN,
     CONF_ORIGIN_QUERY,
@@ -46,6 +47,7 @@ from .const import (
     CONF_TIME_START,
     CONF_WEEKDAYS,
     DEFAULT_DELAY_THRESHOLD,
+    DEFAULT_INCLUDE_COACHES,
     DEFAULT_MAX_TRAINS,
     DEFAULT_REALTIME_INTERVAL,
     DEFAULT_TIME_END,
@@ -317,6 +319,9 @@ class RouteSubentryFlow(ConfigSubentryFlow):
                         min=1, max=20, step=1, mode=NumberSelectorMode.BOX
                     )
                 ),
+                probatio.Required(
+                    CONF_INCLUDE_COACHES, default=defaults[CONF_INCLUDE_COACHES]
+                ): BooleanSelector(),
             }
         )
 
@@ -339,6 +344,7 @@ class RouteSubentryFlow(ConfigSubentryFlow):
             CONF_WEEKDAYS: [d for d in WEEKDAYS if d in user_input[CONF_WEEKDAYS]],
             CONF_DELAY_THRESHOLD: int(user_input[CONF_DELAY_THRESHOLD]),
             CONF_MAX_TRAINS: int(user_input[CONF_MAX_TRAINS]),
+            CONF_INCLUDE_COACHES: bool(user_input[CONF_INCLUDE_COACHES]),
         }
         unique_id = (
             f"{data[CONF_ORIGIN]}>{'+'.join(sorted(data[CONF_DESTINATIONS]))}"
@@ -369,6 +375,7 @@ class RouteSubentryFlow(ConfigSubentryFlow):
             CONF_WEEKDAYS: DEFAULT_WEEKDAYS,
             CONF_DELAY_THRESHOLD: DEFAULT_DELAY_THRESHOLD,
             CONF_MAX_TRAINS: DEFAULT_MAX_TRAINS,
+            CONF_INCLUDE_COACHES: DEFAULT_INCLUDE_COACHES,
         }
         return self.async_show_form(
             step_id="schedule",
@@ -407,6 +414,9 @@ class RouteSubentryFlow(ConfigSubentryFlow):
                 CONF_DELAY_THRESHOLD, DEFAULT_DELAY_THRESHOLD
             ),
             CONF_MAX_TRAINS: subentry.data.get(CONF_MAX_TRAINS, DEFAULT_MAX_TRAINS),
+            CONF_INCLUDE_COACHES: subentry.data.get(
+                CONF_INCLUDE_COACHES, DEFAULT_INCLUDE_COACHES
+            ),
         }
         return self.async_show_form(
             step_id="reconfigure",

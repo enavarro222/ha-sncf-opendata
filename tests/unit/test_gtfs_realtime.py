@@ -73,6 +73,30 @@ def test_trip_updates_index() -> None:
     assert [t.number for t in updates.added] == ["871000"]
 
 
+def test_road_trips() -> None:
+    dep = datetime(2026, 11, 4, 18, 35, tzinfo=UTC)
+    data = make_trip_updates(
+        [
+            RtTrip(trip_id("462034", road=True), stops=[StopTime(A, departure=dep)]),
+            RtTrip("OCESN462036R", relationship="CANCELED"),
+            RtTrip("OCESN56053R", relationship="ADDED"),
+            RtTrip(trip_id("870058"), stops=[StopTime(A, departure=dep)]),
+        ],
+        NOW,
+    )
+    updates = parse_trip_updates(data)
+    coach = updates.find(trip_id("462034", road=True), "462034", DAY)
+    assert coach is not None
+    assert coach.road
+    cancelled = updates.find("unknown", "462036", DAY)
+    assert cancelled is not None
+    assert cancelled.road
+    assert [(t.number, t.road) for t in updates.added] == [("56053", True)]
+    train = updates.find(trip_id("870058"), "870058", DAY)
+    assert train is not None
+    assert not train.road
+
+
 def test_cancellation_wins_over_update_of_same_number() -> None:
     data = make_trip_updates(
         [

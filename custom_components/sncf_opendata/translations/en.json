@@ -76,11 +76,13 @@
             "time_end": "To",
             "weekdays": "Days",
             "delay_threshold": "Delay threshold",
-            "max_trains": "Trains listed"
+            "max_trains": "Trains listed",
+            "include_coaches": "Include coaches"
           },
           "data_description": {
             "delay_threshold": "A train is reported as late from this delay, and again when its delay moves by this much.",
-            "max_trains": "Maximum number of upcoming trains in the sensor attributes."
+            "max_trains": "Maximum number of upcoming trains in the sensor attributes.",
+            "include_coaches": "Also follow road services: replacement coaches during strikes or works, and regional coaches."
           }
         },
         "reconfigure": {
@@ -92,11 +94,13 @@
             "time_end": "To",
             "weekdays": "Days",
             "delay_threshold": "Delay threshold",
-            "max_trains": "Trains listed"
+            "max_trains": "Trains listed",
+            "include_coaches": "Include coaches"
           },
           "data_description": {
             "delay_threshold": "A train is reported as late from this delay, and again when its delay moves by this much.",
-            "max_trains": "Maximum number of upcoming trains in the sensor attributes."
+            "max_trains": "Maximum number of upcoming trains in the sensor attributes.",
+            "include_coaches": "Also follow road services: replacement coaches during strikes or works, and regional coaches."
           }
         }
       }

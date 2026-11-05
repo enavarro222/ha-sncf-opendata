@@ -22,13 +22,23 @@ from .const import TZ_PARIS
 
 UIC_RE = re.compile(r"(\d{8})$")
 STOP_POINT_MODE_RE = re.compile(r"^StopPoint:OCE(.+)-\d{8}$")
-# Road services (replacement buses, coaches, shuttles) are not trains.
+# Road services (replacement coaches, buses, shuttles). Routes only follow
+# them when asked to.
 ROAD_MODES = frozenset({"Car TER", "Car à réservation", "Car", "Navette", "Bus"})
-INDEX_FORMAT = 1
+INDEX_FORMAT = 2
 
 
 class GtfsFormatError(ValueError):
     """The GTFS archive is not in the expected format."""
+
+
+class IndexFormatError(ValueError):
+    """A stored index was written by another version of the integration."""
+
+
+def is_road_mode(mode: str) -> bool:
+    """Tell whether a commercial mode is a road service."""
+    return mode in ROAD_MODES
 
 
 def uic_from_stop_id(stop_id: str) -> str | None:
@@ -127,6 +137,11 @@ class StaticTrip:
     terminus_uic: str | None
     stops: list[TripStop]
 
+    @property
+    def road(self) -> bool:
+        """Tell whether this trip is a road service (coach, bus)."""
+        return is_road_mode(self.mode)
+
 
 @dataclass(slots=True)
 class ScheduledDeparture:
@@ -214,17 +229,21 @@ class StaticIndex:
         destinations: list[str],
         start: datetime,
         end: datetime,
+        include_road: bool = False,
     ) -> list[ScheduledDeparture]:
         """Return direct trains leaving the origin between start and end.
 
         A train qualifies when passengers can board at the origin and leave at
-        one of the destinations further along the trip.
+        one of the destinations further along the trip. Road services
+        (coaches, buses) are left out unless ``include_road`` is set.
         """
         wanted = set(destinations)
         first_day = (start.astimezone(TZ_PARIS) - timedelta(days=1)).date()
         last_day = end.astimezone(TZ_PARIS).date()
         result: list[ScheduledDeparture] = []
         for trip in self.trips.values():
+            if trip.road and not include_road:
+                continue
             origin_pos = next(
                 (
                     i
@@ -311,7 +330,7 @@ class StaticIndex:
     def from_dict(cls, data: dict[str, Any]) -> StaticIndex:
         """Load a stored index. Raise ValueError if it is unusable."""
         if data.get("format") != INDEX_FORMAT:
-            raise ValueError("Unsupported stored index format")
+            raise IndexFormatError(f"Stored index format {data.get('format')}")
         try:
             stations = {
                 row[0]: Station(row[0], row[1], row[2], row[3])
@@ -532,8 +551,6 @@ def parse_gtfs(
                 continue
             modes = [r[2] for r in rows if r[2]]
             mode = modes[0] if modes else ""
-            if mode in ROAD_MODES:
-                continue
             number = (row.get("trip_headsign") or "").strip() or _number_from_trip_id(
                 trip_id
             )
@@ -559,7 +576,8 @@ def parse_gtfs(
         return index
 
 
-_TRIP_NUMBER_RE = re.compile(r"^OCESN(\d+)F")
+# OCESN<number>F for rail services, OCESN<number>R for road services.
+_TRIP_NUMBER_RE = re.compile(r"^OCESN(\d+)([FR])")
 
 
 def _number_from_trip_id(trip_id: str) -> str:
@@ -570,3 +588,9 @@ def _number_from_trip_id(trip_id: str) -> str:
 def number_from_trip_id(trip_id: str) -> str:
     """Return the train number encoded in an SNCF trip id."""
     return _number_from_trip_id(trip_id)
+
+
+def is_road_trip_id(trip_id: str) -> bool:
+    """Tell whether an SNCF trip id is the one of a road service."""
+    match = _TRIP_NUMBER_RE.match(trip_id)
+    return match is not None and match.group(2) == "R"

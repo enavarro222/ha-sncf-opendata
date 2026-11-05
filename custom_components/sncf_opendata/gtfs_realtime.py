@@ -14,7 +14,7 @@ import re
 from google.protobuf.message import DecodeError
 from google.transit import gtfs_realtime_pb2
 
-from .gtfs_static import number_from_trip_id, uic_from_stop_id
+from .gtfs_static import is_road_trip_id, number_from_trip_id, uic_from_stop_id
 
 _TAG_RE = re.compile(r"<[^>]+>")
 _SPACE_RE = re.compile(r"\s+")
@@ -72,6 +72,8 @@ class RealtimeTrip:
     start_date: date | None
     relationship: TripRelationship
     stops: list[StopUpdate]
+    # A road service (coach, bus), from the trip id.
+    road: bool = False
 
     def stop(self, uic: str) -> StopUpdate | None:
         """Return the update of a call, if any."""
@@ -93,7 +95,7 @@ class TripUpdates:
         """Find the realtime trip of a scheduled train.
 
         The feed uses the full trip id for updates of planned trains, but a
-        short ``OCESN<number>F`` id for cancellations and added trains, so the
+        short ``OCESN<number>F`` (or ``R``) id for cancellations and added trains, so the
         train number and service day are used as a fallback.
         """
         trip = self.by_trip.get((trip_id, service_date))
@@ -168,6 +170,7 @@ def parse_trip_updates(data: bytes) -> TripUpdates:
                 descriptor.schedule_relationship, TripRelationship.OTHER
             ),
             stops=stops,
+            road=is_road_trip_id(descriptor.trip_id),
         )
         if trip.relationship is TripRelationship.ADDED:
             result.added.append(trip)

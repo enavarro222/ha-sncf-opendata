@@ -30,7 +30,9 @@ def stop_point(uic: str, mode: str = "Train TER") -> str:
     return f"StopPoint:OCE{mode}-{uic}"
 
 
-def trip_id(number: str, suffix: str = "1") -> str:
+def trip_id(number: str, suffix: str = "1", *, road: bool = False) -> str:
+    if road:
+        return f"OCESN{number}R1187_R:CTE:FR:Line::X::{suffix}"
     return f"OCESN{number}F1187_F:TER:FR:Line::X::{suffix}"
 
 
@@ -46,7 +48,7 @@ class Trip:
 
     @property
     def trip_id(self) -> str:
-        return trip_id(self.number, self.suffix)
+        return trip_id(self.number, self.suffix, road=self.mode.startswith("Car"))
 
 
 def default_trips() -> list[Trip]:
@@ -81,7 +83,7 @@ def default_trips() -> list[Trip]:
                 (C, "25:40:00", "25:40:00", "1", "0"),
             ],
         ),
-        # Replacement coach: not a train.
+        # Replacement coach: only followed on request.
         Trip(
             "99999",
             "S1",

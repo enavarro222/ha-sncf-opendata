@@ -76,11 +76,13 @@
             "time_end": "À",
             "weekdays": "Jours",
             "delay_threshold": "Seuil de retard",
-            "max_trains": "Trains listés"
+            "max_trains": "Trains listés",
+            "include_coaches": "Inclure les autocars"
           },
           "data_description": {
             "delay_threshold": "Un train est signalé en retard à partir de ce retard, puis de nouveau quand son retard varie d'autant.",
-            "max_trains": "Nombre maximal de prochains trains dans les attributs du capteur."
+            "max_trains": "Nombre maximal de prochains trains dans les attributs du capteur.",
+            "include_coaches": "Suivre aussi les services routiers : cars de substitution pendant les grèves ou les travaux, et cars régionaux."
           }
         },
         "reconfigure": {
@@ -92,11 +94,13 @@
             "time_end": "À",
             "weekdays": "Jours",
             "delay_threshold": "Seuil de retard",
-            "max_trains": "Trains listés"
+            "max_trains": "Trains listés",
+            "include_coaches": "Inclure les autocars"
           },
           "data_description": {
             "delay_threshold": "Un train est signalé en retard à partir de ce retard, puis de nouveau quand son retard varie d'autant.",
-            "max_trains": "Nombre maximal de prochains trains dans les attributs du capteur."
+            "max_trains": "Nombre maximal de prochains trains dans les attributs du capteur.",
+            "include_coaches": "Suivre aussi les services routiers : cars de substitution pendant les grèves ou les travaux, et cars régionaux."
           }
         }
       }

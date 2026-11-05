@@ -16,6 +16,7 @@ from custom_components.sncf_opendata.const import (
     CONF_DELAY_THRESHOLD,
     CONF_DESTINATIONS,
     CONF_DESTINATIONS_QUERY,
+    CONF_INCLUDE_COACHES,
     CONF_MAX_TRAINS,
     CONF_ORIGIN,
     CONF_ORIGIN_QUERY,
@@ -161,6 +162,7 @@ async def test_route_flow(
     assert defaults[CONF_ROUTE_NAME] == (
         "Toulouse Matabiau → Rabastens - Couffouleux / Saint-Sulpice"
     )
+    assert defaults[CONF_INCLUDE_COACHES] is False
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"],
         SCHEDULE | {CONF_TIME_END: "06:00:00", CONF_WEEKDAYS: []},
@@ -184,6 +186,7 @@ async def test_route_flow(
         CONF_WEEKDAYS: ["mon", "fri"],
         CONF_DELAY_THRESHOLD: 5,
         CONF_MAX_TRAINS: 4,
+        CONF_INCLUDE_COACHES: False,
     }
     # The entry was reloaded and follows the new route.
     assert subentry.subentry_id in entry.runtime_data.coordinator.routes
@@ -225,6 +228,7 @@ async def test_route_reconfigure(
             CONF_ROUTE_NAME: "  ",
             CONF_TIME_START: "16:00:00",
             CONF_TIME_END: "19:00:00",
+            CONF_INCLUDE_COACHES: True,
         },
     )
     assert result["type"] is FlowResultType.ABORT
@@ -236,6 +240,7 @@ async def test_route_reconfigure(
     assert subentry.data[CONF_DESTINATIONS] == [C, B]
     route = entry.runtime_data.coordinator.routes[subentry_id]
     assert route.time_end.isoformat() == "19:00:00"
+    assert route.include_coaches
 
 
 async def test_route_flow_needs_loaded_entry(

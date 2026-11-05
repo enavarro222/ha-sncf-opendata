@@ -11,10 +11,14 @@ import pytest
 from custom_components.sncf_opendata.const import TZ_PARIS
 from custom_components.sncf_opendata.gtfs_static import (
     GtfsFormatError,
+    IndexFormatError,
     StaticIndex,
     gtfs_datetime,
+    is_road_mode,
+    is_road_trip_id,
     mode_from_stop_id,
     normalize,
+    number_from_trip_id,
     parse_gtfs,
     parse_gtfs_time,
     service_day_start,
@@ -40,6 +44,26 @@ def test_stop_id_helpers() -> None:
     assert mode_from_stop_id("StopPoint:OCETrain TER-87611004") == "TER"
     assert mode_from_stop_id("StopPoint:OCETGV INOUI-87611004") == "TGV INOUI"
     assert mode_from_stop_id("StopArea:OCE87611004") == ""
+    assert mode_from_stop_id("StopPoint:OCECar TER-87611004") == "Car TER"
+
+
+def test_trip_id_helpers() -> None:
+    rail = "OCESN872496F1187_F:TER:FR:Line::3730A943::87611004:87615252:9:1905:20261105"
+    road = (
+        "OCESN462034R1187_R:CTE:FR:Line::8A45A100::87611004:87613422:10:2245:20261105"
+    )
+    assert number_from_trip_id(rail) == "872496"
+    assert number_from_trip_id(road) == "462034"
+    # Short ids of cancelled and added trips.
+    assert number_from_trip_id("OCESN870010F") == "870010"
+    assert number_from_trip_id("OCESN56053R") == "56053"
+    assert number_from_trip_id("weird") == ""
+    assert not is_road_trip_id(rail)
+    assert is_road_trip_id(road)
+    assert is_road_trip_id("OCESN56053R")
+    assert not is_road_trip_id("weird")
+    assert is_road_mode("Car TER")
+    assert not is_road_mode("TER")
 
 
 def test_times_and_service_days() -> None:
@@ -74,11 +98,14 @@ def test_normalize_and_search() -> None:
 def test_index_keeps_direct_trains_only() -> None:
     index = index_of(make_gtfs_zip(), {A, B, C})
     numbers = sorted(t.number for t in index.trips.values())
-    # The replacement coach is not a train.
-    assert "99999" not in numbers
     assert {"870058", "872410", "870099", "870070", "870080", "870200"} <= set(numbers)
     albi = next(t for t in index.trips.values() if t.number == "870058")
     assert albi.mode == "TER"
+    assert not albi.road
+    # The replacement coach is indexed, flagged as a road service.
+    coach = next(t for t in index.trips.values() if t.number == "99999")
+    assert coach.mode == "Car TER"
+    assert coach.road
     assert albi.terminus_uic == D
     assert [s.uic for s in albi.stops] == [A, B, C]
 
@@ -99,6 +126,20 @@ def test_scheduled_departures_rules() -> None:
     assert [d.number for d in both] == ["872410", "870058"]
     # Destinations come in calling order, whatever the configured order.
     assert [uic for uic, _ in both[1].destinations] == [B, C]
+
+
+def test_scheduled_departures_with_coaches() -> None:
+    index = index_of(make_gtfs_zip(), {A, B, C})
+    deps = index.scheduled_departures(
+        A, [C], at(DAY, "16:00"), at(DAY, "20:00"), include_road=True
+    )
+    assert [(d.number, d.mode) for d in deps] == [
+        ("870058", "TER"),
+        ("99999", "Car TER"),
+    ]
+    coach = deps[1]
+    assert coach.scheduled_departure == at(DAY, "17:20")
+    assert coach.scheduled_arrival == at(DAY, "18:00")
 
 
 def test_after_midnight_and_calendar() -> None:
@@ -157,8 +198,11 @@ def test_roundtrip_and_covers() -> None:
     assert restored.covers({A, C}, FIRST, LAST)
     assert not restored.covers({A, D}, FIRST, LAST)
     assert not restored.covers({A}, FIRST, LAST + timedelta(days=1))
-    with pytest.raises(ValueError, match="format"):
+    with pytest.raises(IndexFormatError, match="format 99"):
         StaticIndex.from_dict({"format": 99})
+    # Indexes written before coaches were indexed are rebuilt.
+    with pytest.raises(IndexFormatError):
+        StaticIndex.from_dict({**index.as_dict(), "format": 1})
     data = index.as_dict()
     del data["trips"]
     with pytest.raises(ValueError, match="Corrupted"):

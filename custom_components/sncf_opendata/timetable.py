@@ -53,6 +53,8 @@ class RouteConfig:
     weekdays: frozenset[int]  # 0 = Monday
     delay_threshold: int  # minutes
     max_trains: int
+    # Also follow road services: replacement coaches, regional coaches.
+    include_coaches: bool = False
 
     def window(self, now: datetime) -> tuple[datetime, datetime] | None:
         """Return the current window, or the next one if today's is over."""
@@ -289,6 +291,8 @@ def realtime_only_departures(
         is_cancelled = trip.relationship is TripRelationship.CANCELED
         if not trip.number or trip.number in known:
             continue
+        if trip.road and not route.include_coaches:
+            continue
         origin_pos = next(
             (
                 i
@@ -332,7 +336,8 @@ def realtime_only_departures(
         result.append(
             Departure(
                 number=trip.number,
-                mode=static.mode_of(trip.number) if static else "",
+                mode=(static.mode_of(trip.number) if static else "")
+                or ("Car" if trip.road else ""),
                 service_date=trip.start_date or scheduled_departure.date(),
                 origin_uic=route.origin,
                 destination_uic=destination.uic,
@@ -405,7 +410,11 @@ def build_snapshot(
         return RouteSnapshot(route, None, None, [], updates is not None, None, names)
     start, end = window
     planned = static.scheduled_departures(
-        route.origin, list(route.destinations), start, end
+        route.origin,
+        list(route.destinations),
+        start,
+        end,
+        include_road=route.include_coaches,
     )
     departures = [merge_departure(p, updates) for p in planned]
     if updates is not None:

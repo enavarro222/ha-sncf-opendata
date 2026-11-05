@@ -52,6 +52,7 @@ def route(
     start: str = "16:30",
     end: str = "20:00",
     weekdays: frozenset[int] = frozenset(range(5)),
+    include_coaches: bool = False,
 ) -> RouteConfig:
     return RouteConfig(
         route_id="r1",
@@ -63,6 +64,7 @@ def route(
         weekdays=weekdays,
         delay_threshold=3,
         max_trains=10,
+        include_coaches=include_coaches,
     )
 
 
@@ -300,6 +302,63 @@ def test_realtime_only_trains(index: StaticIndex) -> None:
     assert added.delay == 2
     assert added.expected_arrival == at("18:40")
     assert added.status is TrainStatus.DELAYED
+
+
+def test_coaches(index: StaticIndex) -> None:
+    """Road services are only followed when the route asks for them."""
+    now = at("16:00")
+    updates = updates_of(
+        [
+            # The coach of the timetable, late.
+            RtTrip(
+                trip_id("99999", road=True),
+                stops=[
+                    StopTime(A, departure=at("17:25"), departure_delay=300),
+                    StopTime(C, arrival=at("18:05"), arrival_delay=300),
+                ],
+            ),
+            # A coach removed from the timetable, cancelled.
+            RtTrip(
+                "OCESN462036R",
+                relationship="CANCELED",
+                stops=[
+                    StopTime(A, departure=at("19:35"), departure_delay=0),
+                    StopTime(B, arrival=at("20:15"), arrival_delay=0),
+                ],
+            ),
+            # A coach added to the timetable.
+            RtTrip(
+                "OCESN462040R",
+                relationship="ADDED",
+                stops=[
+                    StopTime(A, departure=at("19:45")),
+                    StopTime(C, arrival=at("20:30")),
+                ],
+            ),
+        ],
+        now,
+    )
+    trains_only = build_snapshot(route(), index, updates, None, None, now, GRACE)
+    assert [d.number for d in trains_only.departures] == ["872410", "870058"]
+
+    snapshot = build_snapshot(
+        route(include_coaches=True), index, updates, None, None, now, GRACE
+    )
+    by_number = {d.number: d for d in snapshot.departures}
+    assert list(by_number) == ["872410", "870058", "99999", "462036", "462040"]
+    coach = by_number["99999"]
+    assert coach.mode == "Car TER"
+    assert coach.realtime
+    assert coach.delay == 5
+    assert coach.status is TrainStatus.DELAYED
+    assert coach.expected_arrival == at("18:05")
+    cancelled = by_number["462036"]
+    assert cancelled.cancelled
+    assert cancelled.mode == "Car"
+    added = by_number["462040"]
+    assert added.added
+    assert added.mode == "Car"
+    assert added.destinations == [C]
 
 
 def test_alerts_platforms_and_departed(index: StaticIndex) -> None:

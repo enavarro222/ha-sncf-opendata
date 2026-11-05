@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from datetime import timedelta
 import os
+from typing import Any
 
 from aiohttp import ClientError
 from freezegun.api import FrozenDateTimeFactory
@@ -21,6 +22,8 @@ from pytest_homeassistant_custom_component.common import (
 
 from custom_components.sncf_opendata.const import (
     DOMAIN,
+    STORAGE_KEY,
+    STORAGE_VERSION,
     URL_GTFS_RT_TRIP_UPDATES,
     URL_GTFS_STATIC,
     URL_PLATFORM_BOARD,
@@ -252,6 +255,47 @@ async def test_timetable_cache(
     await hass.config_entries.async_remove(entry.entry_id)
     await hass.async_block_till_done()
     assert not os.path.exists(hass.config.cache_path(DOMAIN, "gtfs.zip"))
+
+
+@pytest.mark.parametrize(
+    ("stored_index", "warned"),
+    [
+        # Written by version 0.1, before coaches were indexed: rebuilt quietly.
+        ({"format": 1, "trips": []}, False),
+        # Damaged: rebuilt, with a warning.
+        ({"format": 2}, True),
+    ],
+)
+async def test_stored_index_rebuilt(
+    hass: HomeAssistant,
+    hass_storage: dict[str, Any],
+    feeds: Feeds,
+    at_16h: FrozenDateTimeFactory,
+    make_entry: Callable[..., MockConfigEntry],
+    caplog: pytest.LogCaptureFixture,
+    stored_index: dict[str, Any],
+    warned: bool,
+) -> None:
+    hass_storage[STORAGE_KEY] = {
+        "version": STORAGE_VERSION,
+        "minor_version": 1,
+        "key": STORAGE_KEY,
+        "data": {
+            "etag": ETAG,
+            "last_modified": None,
+            "checked_at": paris("2026-11-04 15:00").isoformat(),
+            "index": stored_index,
+        },
+    }
+    entry = make_entry()
+    await setup(hass, entry)
+    assert entry.state is ConfigEntryState.LOADED
+    assert len(feeds.calls(URL_GTFS_STATIC)) == 1
+    assert ("Ignoring the stored timetable index" in caplog.text) is warned
+    assert hass_storage[STORAGE_KEY]["data"]["index"]["format"] == 2
+    # Leave no cached archive behind for the other tests.
+    await hass.config_entries.async_remove(entry.entry_id)
+    await hass.async_block_till_done()
 
 
 async def test_setup_retry_without_timetable(

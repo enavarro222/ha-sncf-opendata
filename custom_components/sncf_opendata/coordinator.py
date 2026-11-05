@@ -21,6 +21,7 @@ from .const import (
     ALERTS_REFRESH_INTERVAL,
     CONF_DELAY_THRESHOLD,
     CONF_DESTINATIONS,
+    CONF_INCLUDE_COACHES,
     CONF_MAX_TRAINS,
     CONF_ORIGIN,
     CONF_PLATFORMS,
@@ -29,6 +30,7 @@ from .const import (
     CONF_TIME_START,
     CONF_WEEKDAYS,
     DEFAULT_DELAY_THRESHOLD,
+    DEFAULT_INCLUDE_COACHES,
     DEFAULT_MAX_TRAINS,
     DEFAULT_REALTIME_INTERVAL,
     DEPARTED_GRACE,
@@ -55,7 +57,7 @@ from .gtfs_realtime import (
     parse_alerts,
     parse_trip_updates,
 )
-from .gtfs_static import GtfsFormatError, StaticIndex, parse_gtfs
+from .gtfs_static import GtfsFormatError, IndexFormatError, StaticIndex, parse_gtfs
 from .platforms import PlatformClient, PlatformMap
 from .timetable import RouteConfig, RouteSnapshot, build_snapshot
 
@@ -94,6 +96,7 @@ def route_from_subentry(subentry: ConfigSubentry) -> RouteConfig:
         weekdays=frozenset(WEEKDAYS.index(day) for day in data[CONF_WEEKDAYS]),
         delay_threshold=int(data.get(CONF_DELAY_THRESHOLD, DEFAULT_DELAY_THRESHOLD)),
         max_trains=int(data.get(CONF_MAX_TRAINS, DEFAULT_MAX_TRAINS)),
+        include_coaches=bool(data.get(CONF_INCLUDE_COACHES, DEFAULT_INCLUDE_COACHES)),
     )
 
 
@@ -162,6 +165,9 @@ class StaticTimetable:
             self._last_modified = stored.get("last_modified")
             try:
                 self.index = StaticIndex.from_dict(stored["index"])
+            except IndexFormatError as err:
+                _LOGGER.debug("Rebuilding the timetable index: %s", err)
+                self.index = None
             except (KeyError, ValueError) as err:
                 _LOGGER.warning("Ignoring the stored timetable index: %s", err)
                 self.index = None

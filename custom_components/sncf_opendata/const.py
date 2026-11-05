@@ -52,6 +52,7 @@ CONF_WEEKDAYS: Final = "weekdays"
 CONF_DELAY_THRESHOLD: Final = "delay_threshold"
 CONF_MAX_TRAINS: Final = "max_trains"
 CONF_ROUTE_NAME: Final = "route_name"
+CONF_INCLUDE_COACHES: Final = "include_coaches"
 
 WEEKDAYS: Final = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
 DEFAULT_WEEKDAYS: Final = ["mon", "tue", "wed", "thu", "fri"]
@@ -59,6 +60,7 @@ DEFAULT_TIME_START: Final = "07:00:00"
 DEFAULT_TIME_END: Final = "09:00:00"
 DEFAULT_DELAY_THRESHOLD: Final = 5  # minutes
 DEFAULT_MAX_TRAINS: Final = 6
+DEFAULT_INCLUDE_COACHES: Final = False
 
 # Timings
 STATIC_REFRESH_INTERVAL: Final = timedelta(hours=12)
